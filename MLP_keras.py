@@ -1,3 +1,13 @@
+"""
+Apart from the neccesary adapatations to compare the results between keras,
+pytorch and gluon, and to adapt to keras 2.2, I have tried to leave the code
+as similar as possible to the original here:
+
+https://github.com/hexiangnan/neural_collaborative_filtering
+
+All credit for the code here to Xiangnan He and collaborators
+"""
+
 import numpy as np
 import pandas as pd
 import os
@@ -163,7 +173,7 @@ if __name__ == '__main__':
     print("End. Best Iteration {}:  HR = {:.4f}, NDCG = {:.4f}. "
         .format(best_iter, best_hr, best_ndcg))
     if save_model:
-        print("The best GMF model is saved to {}".format(modelpath))
+        print("The best MLP model is saved to {}".format(modelpath))
 
     if save_model:
         if not os.path.isfile(resultsdfpath):

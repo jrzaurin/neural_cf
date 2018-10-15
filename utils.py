@@ -1,3 +1,10 @@
+"""
+This functions will be share when using all keras, pytorch and gluon,  so is
+better to place then in a separate module
+
+@author: Javier Rodriguez (jrzaurin@gmail.com)
+"""
+
 import numpy as np
 import math
 

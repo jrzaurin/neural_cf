@@ -1,16 +1,19 @@
+""""
+This file is an adaptation to the one at
+https://github.com/hexiangnan/neural_collaborative_filtering
+
+using dataframes (a bit faster)
+"""
+
 import scipy.sparse as sp
 import pandas as pd
 import numpy as np
 
 class Dataset(object):
-    '''
-    classdocs
-    '''
-
     def __init__(self, path):
-        '''
-        Constructor
-        '''
+        """
+        Constructor to build the datasets
+        """
         self.trainMatrix = self.load_rating_file_as_matrix(path + ".train.rating")
         self.testRatings = self.load_rating_file_as_list(path + ".test.rating")
         self.testNegatives = self.load_negative_file(path + ".test.negative")

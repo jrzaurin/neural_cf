@@ -1,3 +1,13 @@
+"""
+Apart from the neccesary adapatations to compare the results between keras,
+pytorch and gluon, and to adapt to keras 2.2, I have tried to leave the code
+as similar as possible to the original here:
+
+https://github.com/hexiangnan/neural_collaborative_filtering
+
+All credit for the code here to Xiangnan He and collaborators
+"""
+
 import numpy as np
 import pandas as pd
 import os

@@ -1,3 +1,7 @@
+"""
+@author: Javier Rodriguez (jrzaurin@gmail.com)
+"""
+
 import numpy as np
 import pandas as pd
 import os
@@ -34,7 +38,7 @@ def parse_args():
         help="Specify an optimizer: adagrad, adam, rmsprop, sgd")
     parser.add_argument("--validate_every", type=int, default=1,
         help="validate every n epochs")
-    parser.add_argument("--save_model", action="store_false")
+    parser.add_argument("--save_model", type=int, default=1)
     parser.add_argument("--n_neg", type=int, default=4,
         help="number of negative instances to consider per positive instance.")
     parser.add_argument("--topK", type=int, default=10,
@@ -44,6 +48,9 @@ def parse_args():
 
 
 class GMF(Block):
+    """
+    General Matrix factorization (without bias)
+    """
     def __init__(self, n_user, n_item, n_emb=8):
         super(GMF, self).__init__()
 
@@ -65,6 +72,7 @@ class GMF(Block):
         return preds
 
 
+# Train and test functions: very similar to pytorch syntax
 def train(model, criterion, trainer, epoch, batch_size, ctx,
     trainRatings,n_items,n_neg,testNegatives):
     train_obs = get_train_instances(trainRatings,
@@ -137,6 +145,8 @@ if __name__ == '__main__':
     trainRatings, testRatings, testNegatives = dataset.trainMatrix, dataset.testRatings, dataset.testNegatives
     n_users, n_items = trainRatings.shape
 
+    # here we know that we will test using 100 instances and that the 1st one
+    # is the positive. Therefore we set batch_size=100 and no shuffle
     test = get_test_instances(testRatings, testNegatives)
     test_dataset = mx.gluon.data.dataset.ArrayDataset(test)
     test_loader = mx.gluon.data.DataLoader(dataset=test_dataset,

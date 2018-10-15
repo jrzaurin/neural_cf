@@ -1,3 +1,7 @@
+"""
+@author: Javier Rodriguez (jrzaurin@gmail.com)
+"""
+
 import numpy as np
 import pandas as pd
 import os
@@ -50,6 +54,10 @@ def parse_args():
 
 
 class MLP(HybridBlock):
+    """
+    Concatenate Embeddings that are then passed through a series of Dense
+    layers
+    """
     def __init__(self, n_user, n_item, layers, dropouts):
         super(MLP, self).__init__()
 

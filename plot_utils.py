@@ -1,3 +1,12 @@
+"""
+This is a series of simple helpers that are coded here so that the  notebook
+with the summary of the results is cleaner and more readable.
+
+There is nothing particularly relevant here.
+
+@author: Javier Rodriguez (jrzaurin@gmail.com)
+"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

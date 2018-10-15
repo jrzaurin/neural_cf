@@ -1,3 +1,13 @@
+"""
+Apart from the neccesary adapatations to compare the results between keras,
+pytorch and gluon, and to adapt to keras 2.2, I have tried to leave the code
+as similar as possible to the original here:
+
+https://github.com/hexiangnan/neural_collaborative_filtering
+
+All credit for the code here to Xiangnan He and collaborators
+"""
+
 import numpy as np
 import pandas as pd
 import os
@@ -41,7 +51,7 @@ def parse_args():
         help="Specify an optimizer: adagrad, adam, rmsprop, sgd")
     parser.add_argument("--validate_every", type=int, default=1,
         help="validate every n epochs")
-    parser.add_argument("--save_model", action="store_false")
+    parser.add_argument("--save_model", type=int, default=1)
     parser.add_argument("--n_neg", type=int, default=4,
         help="number of negative instances to consider per positive instance.")
     parser.add_argument("--topK", type=int, default=10,
@@ -131,6 +141,7 @@ if __name__ == '__main__':
     best_hr, best_ndcg, best_iter = 0,0,0
     for epoch in range(1,epochs+1):
         t1 = time()
+        # in every iteration we "pull" a new set of negative instances
         user, item, labels = get_train_instances(train, n_items, n_neg, testNegatives)
         hist = model.fit([user, item], labels, batch_size=batch_size, epochs=1, verbose=0, shuffle=True)
         t2 = time()
