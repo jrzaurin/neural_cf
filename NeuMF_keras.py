@@ -1,5 +1,5 @@
 """
-Apart from the neccesary adapatations to compare the results between keras,
+Apart from the neccesary adaptations to compare the results between keras,
 pytorch and gluon, and to adapt to keras 2.2, I have tried to leave the code
 as similar as possible to the original here:
 
