@@ -5,4 +5,4 @@ benchmarking neural collaborative filtering with keras, pytorch and gluon
 <!-- ![Screenshot](docs/images/metrics_vs_n_emb.png)
  -->
 
- <img src="docs/images/metrics_vs_n_emb.png" alt="drawing" width="300"/>
+ <img src="docs/images/metrics_vs_n_emb.png" alt="drawing" width="700"/>
