@@ -17,7 +17,7 @@ import re
 def GMF_df(df):
 	df_gmf = df[df.modelname.str.contains('GMF')]
 	modelname = df_gmf.modelname
-	modelname = [re.sub(".h5|.pt|.params|_reg_00", "", n) for n in modelname]
+	modelname = [re.sub(".h5|.pt|.params|_reg_00|_loss_mse", "", n) for n in modelname]
 	dl_frame = [n.split("_")[0] for n in modelname]
 	n_emb = [int(n.split("_")[-1]) for n in modelname]
 	df_gmf['dl_frame'] = dl_frame
@@ -32,7 +32,7 @@ def GMF_df(df):
 def MLP_df(df):
 	df_mlp = df[df.modelname.str.contains('MLP')]
 	modelname = df_mlp.modelname
-	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00", "", n) for n in modelname]
+	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00|_loss_mse", "", n) for n in modelname]
 	dl_frame = [n.split("_")[0] for n in modelname]
 	n_emb = [int(n.split("_")[8]) for n in modelname]
 	with_dropout = [n.split("_")[-1] for n in modelname]
@@ -59,7 +59,8 @@ def NeuMF_df(df):
 	df_neumf['last_layer'] = last_layer
 	df_neumf['optimizer'] = optimizer
 	df_neumf.drop(['modelname', 'train_time'], axis=1, inplace=True)
-	df_neumf.sort_values('dl_frame').reset_index(drop=True, inplace=True)
+	df_neumf = df_neumf.sort_values('dl_frame')
+	df_neumf.reset_index(drop=True, inplace=True)
 	return df_neumf
 
 
@@ -115,8 +116,8 @@ def TIME_df(df):
 	df_time_gmf['dl_frame'] = dl_frame
 	df_time_gmf['n_emb'] = n_emb
 	df_time_gmf.drop(['modelname','best_hr','best_ndcg','best_iter'], axis=1, inplace=True)
-	df_time_gmf = df_time_gmf.sort_values('dl_frame')
-	df_time_gmf.reset_index(drop=True, inplace=True)
+	idx = df_time_gmf.groupby(['dl_frame','n_emb'])['train_time'].transform(min) == df_time_gmf['train_time']
+	df_time_gmf = df_time_gmf[idx].sort_values(['dl_frame','n_emb']).reset_index(drop=True)
 
 	df_time_mlp = df[(df.modelname.str.contains('MLP')) &
 		(df.modelname.str.contains('bs_256')) &
@@ -124,7 +125,7 @@ def TIME_df(df):
 	modelname = df_time_mlp.modelname.tolist()
 	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00", "", n) for n in modelname]
 	dl_frame = [n.split("_")[0] for n in modelname]
-	n_emb = [int(n.split("_")[8]) for n in modelname]
+	n_emb = [int(n.split("_")[-3]) for n in modelname]
 	df_time_mlp['dl_frame'] = dl_frame
 	df_time_mlp['n_emb'] = n_emb
 	df_time_mlp.drop(['modelname','best_hr','best_ndcg','best_iter'], axis=1, inplace=True)
