@@ -2,4 +2,5 @@
 
 benchmarking neural collaborative filtering with keras, pytorch and gluon
 
-![Screenshot](docs/images/GMF_model.png)
+![Screenshot](docs/images/metrics_vs_n_emb.png)
+
