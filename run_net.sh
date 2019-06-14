@@ -91,6 +91,7 @@ python NeuMF_gluon.py --batch_size 256 --lr 0.001 --n_emb 16 --layers "[64, 32, 
 --mlp_pretrain "gluon_MLP_bs_256_reg_00_lr_001_n_emb_32_ll_16_dp_wodp.params" \
 --learner "SGD" --epochs 10
 python NeuMF_gluon.py --batch_size 256 --lr 0.001 --n_emb 16 --layers "[64, 32, 16]" --dropouts "[0.,0.]" \
+# This should have been bs_1024. Results don't change much
 --mf_pretrain "gluon_GMF_bs_1024_lr_001_n_emb_16.params" \
 --mlp_pretrain "gluon_MLP_bs_256_reg_00_lr_001_n_emb_32_ll_16_dp_wodp.params" \
 --freeze 1 --learner "SGD" --epochs 5

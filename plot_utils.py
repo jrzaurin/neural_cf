@@ -125,7 +125,7 @@ def TIME_df(df):
 	modelname = df_time_mlp.modelname.tolist()
 	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00", "", n) for n in modelname]
 	dl_frame = [n.split("_")[0] for n in modelname]
-	n_emb = [int(n.split("_")[-3]) for n in modelname]
+	n_emb = [int(n.split("_")[-5]) for n in modelname]
 	df_time_mlp['dl_frame'] = dl_frame
 	df_time_mlp['n_emb'] = n_emb
 	df_time_mlp.drop(['modelname','best_hr','best_ndcg','best_iter'], axis=1, inplace=True)
