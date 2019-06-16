@@ -160,16 +160,17 @@ if __name__ == '__main__':
     if save_model:
         print("The best GMF model is saved to {}".format(modelpath))
 
-    if not os.path.isfile(resultsdfpath):
-        results_df = pd.DataFrame(columns = ["modelname", "best_hr", "best_ndcg", "best_iter",
-            "train_time"])
-        experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
-            columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
-        results_df = results_df.append(experiment_df, ignore_index=True)
-        results_df.to_pickle(resultsdfpath)
-    else:
-        results_df = pd.read_pickle(resultsdfpath)
-        experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
-            columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
-        results_df = results_df.append(experiment_df, ignore_index=True)
-        results_df.to_pickle(resultsdfpath)
+    if save_model:
+        if not os.path.isfile(resultsdfpath):
+            results_df = pd.DataFrame(columns = ["modelname", "best_hr", "best_ndcg", "best_iter",
+                "train_time"])
+            experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
+                columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
+            results_df = results_df.append(experiment_df, ignore_index=True)
+            results_df.to_pickle(resultsdfpath)
+        else:
+            results_df = pd.read_pickle(resultsdfpath)
+            experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
+                columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
+            results_df = results_df.append(experiment_df, ignore_index=True)
+            results_df.to_pickle(resultsdfpath)

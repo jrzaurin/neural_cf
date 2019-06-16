@@ -16,6 +16,7 @@ from Dataset import Dataset as ml1mDataset
 from time import time
 from utils import *
 
+import pdb
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -60,7 +61,8 @@ class GMF(Block):
         with self.name_scope():
             self.embeddings_user = nn.Embedding(n_user, n_emb, weight_initializer='normal')
             self.embeddings_item = nn.Embedding(n_item, n_emb, weight_initializer='normal')
-            self.out = nn.Dense(in_units=n_emb, units=1, activation='sigmoid', weight_initializer='uniform')
+            # self.out = nn.Dense(in_units=n_emb, units=1, activation='sigmoid', weight_initializer='uniform')
+            self.out = nn.Dense(in_units=n_emb, units=1, weight_initializer='uniform')
 
     def forward(self, users, items):
 
@@ -86,7 +88,8 @@ def train(model, criterion, trainer, epoch, batch_size, ctx,
         batch_size=batch_size,
         # num_workers=4,
         shuffle=True)
-    # n_batches = (train_obs.shape[0]//batch_size)+1
+    train_steps = (train_obs.shape[0]//batch_size)+1
+    running_loss=0
     for batch_idx, data in enumerate(train_data_loader):
         data = data.as_in_context(ctx)
         users, items, labels = data[:,0], data[:,1], data[:,2]
@@ -95,17 +98,29 @@ def train(model, criterion, trainer, epoch, batch_size, ctx,
             loss = criterion(output, labels.astype('float32'))
         loss.backward()
         trainer.step(batch_size)
+        running_loss += loss.asnumpy().mean()
+    return running_loss/train_steps
 
 
 def evaluate(model, test_loader, ctx, topK):
     hits, ndcgs = [],[]
-    n_batches = test_loader.__len__()
     for batch_idx, data in enumerate(test_loader):
         data = data.as_in_context(ctx)
         users, items, labels = data[:,0], data[:,1], data[:,2]
         preds = model(users, items)
-        gtItem = items[0].asscalar()
-        map_item_score = dict( zip(items.asnumpy(), preds.asnumpy()) )
+
+        items = items.asnumpy()
+        preds = preds.asnumpy()
+
+        gtItem = items[0]
+
+        # the following 3 lines of code ensure that the fact that the 1st item is
+        # gtitem does not affect the final rank
+        randidx = np.arange(100)
+        np.random.shuffle(randidx)
+        items, preds = items[randidx], preds[randidx]
+
+        map_item_score = dict( zip(items, preds) )
         ranklist = heapq.nlargest(topK, map_item_score, key=map_item_score.get)
         hr = getHitRatio(ranklist, gtItem)
         ndcg = getNDCG(ranklist, gtItem)
@@ -157,7 +172,7 @@ if __name__ == '__main__':
     ctx =  mx.gpu() if mx.test_utils.list_gpus() else mx.cpu()
     model = GMF(n_users, n_items, n_emb=n_emb)
     model.initialize(ctx=ctx)
-    criterion = gluon.loss.L2Loss()
+    criterion = gluon.loss.SigmoidBCELoss(from_sigmoid=False)
     if learner.lower() == "adagrad":
         trainer = gluon.Trainer(model.collect_params(), 'AdaGrad', {'learning_rate': lr})
     elif learner.lower() == "rmsprop":
@@ -170,13 +185,13 @@ if __name__ == '__main__':
     best_hr, best_ndcgm, best_iter=0,0,0
     for epoch in range(1,epochs+1):
         t1 = time()
-        train(model, criterion, trainer, epoch, batch_size, ctx,
+        loss = train(model, criterion, trainer, epoch, batch_size, ctx,
             trainRatings,n_items,n_neg,testNegatives)
         t2 = time()
         if epoch % validate_every == 0:
             (hr, ndcg) = evaluate(model, test_loader, ctx, topK)
-            print("Epoch: {} {:.2f}s, HR = {:.4f}, NDCG = {:.4f}, validated in {:.2f}s".
-                format(epoch, t2-t1, hr, ndcg, time()-t2))
+            print("Iteration {}: {:.2f}s, HR = {:.4f}, NDCG = {:.4f}, loss = {:.4f}, validated in {:.2f}s"
+                .format(epoch, t2-t1, hr, ndcg, loss, time()-t2))
             if hr > best_hr:
                 best_hr, best_ndcg, best_iter, train_time = hr, ndcg, epoch, t2-t1
                 if save_model:
@@ -186,17 +201,18 @@ if __name__ == '__main__':
     if save_model:
         print("The best GMF model is saved to {}".format(modelpath))
 
-    if not os.path.isfile(resultsdfpath):
-        results_df = pd.DataFrame(columns = ["modelname", "best_hr", "best_ndcg", "best_iter",
-            "train_time"])
-        experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
-            columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
-        results_df = results_df.append(experiment_df, ignore_index=True)
-        results_df.to_pickle(resultsdfpath)
-    else:
-        results_df = pd.read_pickle(resultsdfpath)
-        experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
-            columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
-        results_df = results_df.append(experiment_df, ignore_index=True)
-        results_df.to_pickle(resultsdfpath)
+    if save_model:
+        if not os.path.isfile(resultsdfpath):
+            results_df = pd.DataFrame(columns = ["modelname", "best_hr", "best_ndcg", "best_iter",
+                "train_time"])
+            experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
+                columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
+            results_df = results_df.append(experiment_df, ignore_index=True)
+            results_df.to_pickle(resultsdfpath)
+        else:
+            results_df = pd.read_pickle(resultsdfpath)
+            experiment_df = pd.DataFrame([[modelfname, best_hr, best_ndcg, best_iter, train_time]],
+                columns = ["modelname", "best_hr", "best_ndcg", "best_iter","train_time"])
+            results_df = results_df.append(experiment_df, ignore_index=True)
+            results_df.to_pickle(resultsdfpath)
 
