@@ -49,16 +49,6 @@ Top: *Hit Ratio* (HR) and *Normalized Discounted Cumulative Gain* (NDCG) at
 k=10 for both the GMF and MLP models vs the number of embeddings. Bottom:
 training time for the MLP model per number of embeddings.
 
-Overall, the results can be summarized as follows:
-
-**Keras** (with the `Tensorflow` backend): the easiest to use and the most "stable" across set ups. Is, in general, the slowest.
-
-**Gluon**: I see a lot of potential in this package and I clearly see myself using it in the future. Shows some *"strange"* behavior but that could be me, since this is my first time using it. Is, in general, faster than `Keras` and overall, the success metrics are comparable to (or better than) those obtained with `Pytorch`.
-
-**Pytorch**: The success metrics are very good, its behavior in sensible and is the fastest of the three.
-
-
-
 For more details, go to `results_summary.ipynb`
 
 Any suggestion, email me at: jrzaurin@gmail.com
