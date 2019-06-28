@@ -17,7 +17,7 @@ import re
 def GMF_df(df):
 	df_gmf = df[df.modelname.str.contains('GMF')]
 	modelname = df_gmf.modelname
-	modelname = [re.sub(".h5|.pt|.params|_reg_00|_loss_mse", "", n) for n in modelname]
+	modelname = [re.sub(".h5|.pt|.params|_reg_00", "", n) for n in modelname]
 	dl_frame = [n.split("_")[0] for n in modelname]
 	n_emb = [int(n.split("_")[-1]) for n in modelname]
 	df_gmf['dl_frame'] = dl_frame
@@ -32,7 +32,7 @@ def GMF_df(df):
 def MLP_df(df):
 	df_mlp = df[df.modelname.str.contains('MLP')]
 	modelname = df_mlp.modelname
-	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00|_loss_mse", "", n) for n in modelname]
+	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00", "", n) for n in modelname]
 	dl_frame = [n.split("_")[0] for n in modelname]
 	n_emb = [int(n.split("_")[8]) for n in modelname]
 	with_dropout = [n.split("_")[-1] for n in modelname]
@@ -53,11 +53,9 @@ def NeuMF_df(df):
 	dl_frame = [n.split("_")[0] for n in modelname]
 	with_pretrained = [n.split("_")[1] for n in modelname]
 	last_layer = [n.split("_")[2] for n in modelname]
-	optimizer = ['sgd' if len(n.split("_")) == 3 else "adam" for n in modelname]
 	df_neumf['dl_frame'] = dl_frame
 	df_neumf['with_pretrained'] = with_pretrained
 	df_neumf['last_layer'] = last_layer
-	df_neumf['optimizer'] = optimizer
 	df_neumf.drop(['modelname', 'train_time'], axis=1, inplace=True)
 	df_neumf = df_neumf.sort_values('dl_frame')
 	df_neumf.reset_index(drop=True, inplace=True)
@@ -106,44 +104,45 @@ def plot_metrics(df_gmf, df_mlp):
 
 
 def TIME_df(df):
-	df_time_gmf = df[(df.modelname.str.contains('GMF')) &
-		(df.modelname.str.contains('bs_256')) &
-		(df.modelname.str.contains('lr_001')) ]
-	modelname = df_time_gmf.modelname.tolist()
-	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00", "", n) for n in modelname]
+	tmp_df = df[df.modelname.str.contains('GMF|MLP')]
+	modelname = tmp_df.modelname
+	modelname = [re.sub(".h5|.pt|.params|_reg_00", "", n) for n in modelname]
 	dl_frame = [n.split("_")[0] for n in modelname]
-	n_emb = [int(n.split("_")[-1]) for n in modelname]
-	df_time_gmf['dl_frame'] = dl_frame
-	df_time_gmf['n_emb'] = n_emb
-	df_time_gmf.drop(['modelname','best_hr','best_ndcg','best_iter'], axis=1, inplace=True)
-	idx = df_time_gmf.groupby(['dl_frame','n_emb'])['train_time'].transform(min) == df_time_gmf['train_time']
-	df_time_gmf = df_time_gmf[idx].sort_values(['dl_frame','n_emb']).reset_index(drop=True)
+	model = [n.split("_")[1] for n in modelname]
+	n_emb_locs = [np.where([s =='emb' for s in m.split("_")])[0][0]+1 for m in modelname]
+	n_emb = [int(n.split("_")[i]) for n,i in zip(modelname, n_emb_locs)]
+	bs_locs = [np.where([s =='bs' for s in m.split("_")])[0][0]+1 for m in modelname]
+	bs = [int(n.split("_")[i]) for n,i in zip(modelname, bs_locs)]
+	tmp_df['dl_frame'] = dl_frame
+	tmp_df['model'] = model
+	tmp_df['n_emb'] = n_emb
+	tmp_df['bs'] = bs
 
-	df_time_mlp = df[(df.modelname.str.contains('MLP')) &
-		(df.modelname.str.contains('bs_256')) &
-		(df.modelname.str.contains('wodp')) ]
-	modelname = df_time_mlp.modelname.tolist()
-	modelname = [re.sub(".h5|.pt|.params|_reg_00|reg_00", "", n) for n in modelname]
-	dl_frame = [n.split("_")[0] for n in modelname]
-	n_emb = [int(n.split("_")[-5]) for n in modelname]
-	df_time_mlp['dl_frame'] = dl_frame
-	df_time_mlp['n_emb'] = n_emb
-	df_time_mlp.drop(['modelname','best_hr','best_ndcg','best_iter'], axis=1, inplace=True)
-	df_time_mlp = df_time_mlp.drop_duplicates(['dl_frame','n_emb'], keep='last')
-	df_time_mlp = df_time_mlp.sort_values(['dl_frame', 'n_emb'])
-	df_time_mlp.reset_index(drop=True, inplace=True)
+	df_gmf = tmp_df[tmp_df.model.str.contains('GMF')]
+	df_gmf = df_gmf[df_gmf.n_emb==8]
+	df_gmf.drop(['modelname', 'best_hr', 'best_ndcg', 'best_iter'], axis=1, inplace=True)
+	df_gmf.reset_index(drop=True, inplace=True)
+	idx = df_gmf.groupby(['dl_frame','bs'])['train_time'].transform(min) == df_gmf['train_time']
+	df_gmf = df_gmf[idx].sort_values(['dl_frame','bs']).reset_index(drop=True)
 
-	return df_time_gmf, df_time_mlp
+	df_mlp = tmp_df[(tmp_df.model.str.contains('MLP')) & (tmp_df.bs==256)]
+	df_mlp.drop(['modelname', 'best_hr', 'best_ndcg', 'best_iter'], axis=1, inplace=True)
+	df_mlp.reset_index(drop=True, inplace=True)
+	idx = df_mlp.groupby(['dl_frame','bs', 'n_emb'])['train_time'].transform(min) == df_mlp['train_time']
+	df_mlp = df_mlp[idx].sort_values(['dl_frame','bs']).reset_index(drop=True)
+	df_mlp = df_mlp[df_mlp.dl_frame != 'gluon'].reset_index()
+
+	return df_gmf, df_mlp
 
 def plot_train_time(df):
 	df_time_gmf, df_time_mlp = TIME_df(df)
 	plt.figure(figsize=(15, 12))
 	plt.subplot(2,1,1)
 	plt.subplots_adjust(hspace=0.3)
-	fig = sns.barplot(x='n_emb', y='train_time', hue='dl_frame', data=df_time_gmf)
+	fig = sns.barplot(x='bs', y='train_time', hue='dl_frame', data=df_time_gmf)
 	sns.set_context("notebook", font_scale=1.5)
 	fig.set(ylabel="Training Time")
-	fig.set(xlabel="Number of Embeddings")
+	fig.set(xlabel="Batch Size")
 	fig.set(title="GMF")
 	plt.legend(loc="upper center")
 
