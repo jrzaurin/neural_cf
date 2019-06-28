@@ -47,7 +47,7 @@ time for the MLP model.
 
 Top: *Hit Ratio* (HR) and *Normalized Discounted Cumulative Gain* (NDCG) at
 k=10 for both the GMF and MLP models vs the number of embeddings. Bottom:
-training time for the MLP model per number of embeddings.
+training time for the GMF and MLP models per batch size and number of embeddings respectively.
 
 For more details, go to `results_summary.ipynb`
 
