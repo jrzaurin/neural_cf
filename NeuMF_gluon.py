@@ -18,6 +18,7 @@ from Dataset import Dataset as ml1mDataset
 from time import time
 from utils import *
 
+import pdb
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -99,7 +100,7 @@ class NeuMF(HybridBlock):
                 self.mlp.add(nn.Dropout(rate=dropouts[i-1]))
 
         with self.name_scope():
-            self.out = nn.Dense(in_units=n_emb*2, units=1, activation='sigmoid', weight_initializer='uniform', prefix="out_")
+            self.out = nn.Dense(in_units=n_emb+layers[-1], units=1, weight_initializer='uniform', prefix="out_")
 
     def forward(self, users, items):
 
@@ -205,6 +206,7 @@ if __name__ == '__main__':
     model = NeuMF(n_users, n_items, n_emb, layers, dropouts)
     model.hybridize()
     model.initialize(ctx=ctx)
+    # pdb.set_trace()
     if os.path.isfile(mf_pretrain) and os.path.isfile(mlp_pretrain):
         gmf_model = GMF(n_users, n_items, n_emb)
         gmf_model.load_parameters(mf_pretrain, ctx=ctx)
@@ -232,7 +234,7 @@ if __name__ == '__main__':
         trainer = gluon.Trainer(model.collect_params(), 'Adam', {'learning_rate': lr, 'wd': l2reg})
     else:
         trainer = gluon.Trainer(model.collect_params(), 'SGD', {'learning_rate': lr, 'wd': l2reg})
-    criterion = gluon.loss.L2Loss()
+    criterion = gluon.loss.SigmoidBCELoss(from_sigmoid=False)
 
     # for param in model.collect_params().values():
     #     print (param.name,", ", param.grad_req)

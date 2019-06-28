@@ -70,9 +70,10 @@ class MLP(HybridBlock):
             self.embeddings_user = nn.Embedding(n_user, int(layers[0]/2), weight_initializer='normal')
             self.embeddings_item = nn.Embedding(n_item, int(layers[0]/2), weight_initializer='normal')
             for i in range(1,self.n_layers):
-                self.mlp.add(nn.Dense(in_units=layers[i-1], units=layers[i], prefix="linear{}".format(i)))
+                self.mlp.add(nn.Dense(in_units=layers[i-1], units=layers[i], activation="relu", prefix="linear{}".format(i)))
                 self.mlp.add(nn.Dropout(rate=dropouts[i-1]))
-            self.out = nn.Dense(in_units=layers[-1], units=1, activation='sigmoid', weight_initializer='uniform')
+            # self.out = nn.Dense(in_units=layers[-1], units=1, activation='sigmoid', weight_initializer='uniform')
+            self.out = nn.Dense(in_units=layers[-1], units=1, weight_initializer='uniform')
 
     def forward(self, users, items):
 
@@ -131,7 +132,7 @@ if __name__ == '__main__':
     model = MLP(n_users, n_items, layers, dropouts)
     model.hybridize()
     model.initialize(ctx=ctx)
-    criterion = gluon.loss.L2Loss()
+    criterion = gluon.loss.SigmoidBCELoss(from_sigmoid=False)
     if learner.lower() == "adagrad":
         trainer = gluon.Trainer(model.collect_params(), 'AdaGrad', {'learning_rate': lr, 'wd': l2reg})
     elif learner.lower() == "rmsprop":
@@ -144,13 +145,13 @@ if __name__ == '__main__':
     best_hr, best_ndcgm, best_iter=0,0,0
     for epoch in range(1,epochs+1):
         t1 = time()
-        train(model, criterion, trainer, epoch, batch_size, ctx,
+        loss = train(model, criterion, trainer, epoch, batch_size, ctx,
             trainRatings,n_items,n_neg,testNegatives)
         t2 = time()
         if epoch % validate_every == 0:
             (hr, ndcg) = evaluate(model, test_loader, ctx, topK)
-            print("Epoch: {} {:.2f}s, HR = {:.4f}, NDCG = {:.4f}, validated in {:.2f}s".
-                format(epoch, t2-t1, hr, ndcg, time()-t2))
+            print("Iteration {}: {:.2f}s, HR = {:.4f}, NDCG = {:.4f}, loss = {:.4f}, validated in {:.2f}s"
+                .format(epoch, t2-t1, hr, ndcg, loss, time()-t2))
             if hr > best_hr:
                 best_hr, best_ndcg, best_iter, train_time = hr, ndcg, epoch, t2-t1
                 if save_model:

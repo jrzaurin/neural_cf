@@ -102,7 +102,7 @@ class NeuMF(nn.Module):
             self.mlp.add_module("relu%d" %i, torch.nn.ReLU())
             self.mlp.add_module("dropout%d" %i , torch.nn.Dropout(p=dropouts[i-1]))
 
-        self.out = nn.Linear(in_features=n_emb*2, out_features=1)
+        self.out = nn.Linear(in_features=n_emb+layers[-1], out_features=1)
 
         for m in self.modules():
             if isinstance(m, nn.Embedding):
@@ -121,7 +121,8 @@ class NeuMF(nn.Module):
         mlp_emb_vector = self.mlp(mlp_emb_vector)
 
         emb_vector = torch.cat([mf_emb_vector,mlp_emb_vector], dim=1)
-        preds = torch.sigmoid(self.out(emb_vector))
+        # preds = torch.sigmoid(self.out(emb_vector))
+        preds = self.out(emb_vector)
 
         return preds
 
@@ -231,7 +232,8 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2reg)
     else:
         optimizer = torch.optim.SGD(model.parameters(), lr=lr, weight_decay=l2reg)
-    criterion = nn.MSELoss()
+    # criterion = nn.BCELoss()
+    criterion = nn.BCEWithLogitsLoss()
 
     # model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     # trainable_params = sum([np.prod(p.size()) for p in model_parameters])
@@ -240,13 +242,13 @@ if __name__ == '__main__':
     best_hr, best_ndcgm, best_iter=0,0,0
     for epoch in range(1,epochs+1):
         t1 = time()
-        train(model, criterion, optimizer, epoch, batch_size, use_cuda,
+        loss = train(model, criterion, optimizer, epoch, batch_size, use_cuda,
             trainRatings,n_items,n_neg,testNegatives)
         t2 = time()
         if epoch % validate_every == 0:
             (hr, ndcg) = evaluate(model, test_loader, use_cuda, topK)
-            print("Epoch: {} {:.2f}s, HR = {:.4f}, NDCG = {:.4f}, validated in {:.2f}s".
-                format(epoch, t2-t1, hr, ndcg, time()-t2))
+            print("Iteration {}: {:.2f}s, HR = {:.4f}, NDCG = {:.4f}, loss = {:.4f}, validated in {:.2f}s"
+                .format(epoch, t2-t1, hr, ndcg, loss, time()-t2))
             if hr > best_hr:
                 best_hr, best_ndcg, best_iter, train_time = hr, ndcg, epoch, t2-t1
                 if save_model:
